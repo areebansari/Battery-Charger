@@ -1,0 +1,177 @@
+//!void lcd_print(int data)	// function that prints 8 bit data on LCD serially
+//!{  
+//!   int b=0b10000000;
+//!   int x;
+//!   for (x=1; x<=8 ; x++)
+//!    {     
+//!    output_bit(DATA_PIN,data & b);	// output "Data AND b" on DATA_PIN one bit at a time
+//!    output_low(CLOCK_PIN);				
+//!    output_high(CLOCK_PIN);			// clock pulse
+//!    rotate_right(&b , 1);				// rotate b to right for outputting next bit
+//!    }
+//!   output_low(STROBE_PIN);
+//!   delay_cycles(1);
+//!   output_high(STROBE_PIN); 			// strobe pulse  
+//!}
+
+void lcd_print(int data)
+{
+	set_timer0(0);
+	int b=0b10000000;
+	 do
+    {     
+	    output_bit(DATA_PIN,data & b);
+	    output_low(CLOCK_PIN);
+	    output_high(CLOCK_PIN);
+	    rotate_right(&b , 1);
+    } while(b!=0x80);
+    
+   output_low(STROBE_PIN);
+   delay_cycles(2);
+   output_high(STROBE_PIN);
+   loop_timing = get_timer0();
+}
+
+void lcd_out(int n, long val)		// function that manipulates and converts data to a form that could be printed on LCD 
+{  				// first arguement is for selection of LCD. 1 for upper LCD and 2 for lower LCD
+	int hundreds=0, tens=0, units=0, tenths=0;
+   switch(n)
+   {
+   case 1:				// for LCD 1 the segment addresses are 0x40, 0x50, 0x60 and 0x70
+   {
+	   while	(val>=1000)		// separate hundreds from the number
+	   {
+	   val-=1000;
+	   hundreds++;
+	   }
+   
+   	while	(val>=100)		// separate tens from the number
+	   {
+	   val-=100;
+	   tens++;
+	   }
+   
+   	while	(val>=10) 		// separate units from the number                   
+	   {
+	   val-=10;
+	   units++;
+	   }
+	   
+	   while	(val>=1) 		// separate tenths from the number                  
+	   {
+	   val-=1;
+	   tenths++;
+	   }
+	   
+	if(hundreds==0) lcd_print(0x70 | 0x0A);	// blank third segment if number is less than 100
+   else lcd_print(0x70 | hundreds);	// else print address of segment ORed with  respective data
+   
+   if (hundreds==0 && tens==0) lcd_print(0x60 | 0x0A);	// blank third and fourth segment if number is less than 10
+   else lcd_print(0x60 | tens);	// else print address of segment ORed with  respective data
+   
+   lcd_print(0x50 | units);	// print address of segment ORed with  respective data
+   lcd_print(0x40 | tenths); // print address of segment ORed with  respective data
+   } break;
+   
+   case 2:					// for LCD 2 the segment addresses are 0x00, 0x10, 0x20 and 0x30 other commands are same
+   {
+   	while	(val>=1000)
+	   {
+	   val-=1000;
+	   hundreds++;
+	   }
+   
+   	while	(val>=100)
+	   {
+	   val-=100;
+	   tens++;
+	   }
+   
+   	while	(val>=10)
+	   {
+	   val-=10;
+	   units++;
+	   }
+	   
+	   while	(val>=1)
+	   {
+	   val-=1;
+	   tenths++;
+	   }
+	   
+	if(hundreds==0) lcd_print(0x30 | 0x0A);
+   else lcd_print(0x30 | hundreds);
+   
+   if (hundreds==0 && tens==0) lcd_print(0x20 | 0x0A);
+   else lcd_print(0x20 | tens);
+   
+   lcd_print(0x10 | units);
+   lcd_print(0x00 | tenths); 
+ 
+   } break;
+   default: break;
+   }                              
+}
+
+void lcd_flash(short k, long lcd_value) // function for flashing LCD when in edit mode. 
+{			// first arguement selects to blank the LCD or to show normal data
+			// second arguement holds data which needs to be flashed
+	switch(k)		
+	{
+		case 0: 	// LCD2 is blanked when switch variable is 0
+		{
+			lcd_print(0x30 | 0x0A);
+			lcd_print(0x20 | 0x0A);
+			lcd_print(0x10 | 0x0A);
+			lcd_print(0x00 | 0x0A); break;  
+		}
+		
+		case 1:	// normal data is printed on LCD2 when switch variable is 1 
+		{
+			lcd_out(2, lcd_value); break;
+		}
+	}
+}
+
+void led_on(int led)		// function for switching on respective LED.
+{
+   switch(led)
+   {
+   case 1: output_high(PIN_C0); break;
+   case 2: output_high(PIN_C1); break;
+   case 3: output_high(PIN_D0); break;
+   case 4: output_high(PIN_D1); break;
+   case 5: output_high(PIN_D2); break;
+   case 6: output_high(PIN_D3); break;
+   case 7: output_high(PIN_D4); break;
+   case 8: output_high(PIN_D5); break;
+   case 9: output_high(PIN_D6); break;
+   case 10: output_high(PIN_D7); break;
+   }
+}
+
+void led_off(int led)		// function for switching off respective LED.
+{
+   switch(led)
+   {
+   case 1: output_low(PIN_C0); break;
+   case 2: output_low(PIN_C1); break;
+   case 3: output_low(PIN_D0); break;
+   case 4: output_low(PIN_D1); break;
+   case 5: output_low(PIN_D2); break;
+   case 6: output_low(PIN_D3); break;
+   case 7: output_low(PIN_D4); break;
+   case 8: output_low(PIN_D5); break;
+   case 9: output_low(PIN_D6); break;
+   case 10: output_low(PIN_D7); break;
+   }
+}
+
+void all_leds_off()			// function for switching off all LEDs.		
+{
+   output_low(LED1);
+   output_low(LED2);
+   output_d(0);
+}
+
+
